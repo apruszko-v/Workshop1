@@ -67,10 +67,10 @@ public class Main {
 
     public static void exitOption() {
         Scanner scanner = new Scanner(System.in);
-        String userInput = scanner.nextLine();
+//        String userInput = scanner.nextLine();
 
-        if (userInput.equals("exit")) {
+
             System.out.println(ConsoleColors.YELLOW_UNDERLINED + "Bye, bye.");
-        }
+
     }
 }
