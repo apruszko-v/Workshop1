@@ -1,15 +1,25 @@
 package pl.coderslab;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         selectOption();
     }
 
-    public static void selectOption() {
+    public static void selectOption() throws IOException {
         Scanner scanner = new Scanner(System.in);
+        String filename = "tasks.csv";
 
         System.out.println(ConsoleColors.PURPLE_BACKGROUND + ConsoleColors.BLACK_BOLD + "Please select an option");
         System.out.println(ConsoleColors.PURPLE + """
@@ -22,55 +32,102 @@ public class Main {
         String userInput = scanner.nextLine();
 
         switch (userInput) {
-            case "add" -> addOption();
-            case "remove" -> removeOption();
-            case "list" -> listOption();
+            case "add" -> addOption(filename);
+            case "remove" -> removeOption(filename);
+            case "list" -> listOption(filename);
             case "exit" -> exitOption();
+            default -> selectOption();
         }
     }
 
 
-    public static void addOption() {
-//      add logika: dodanie taska z tymi parametrami co ktos wpisal do pliku tasks.csv
+    public static void addOption(String filename) throws IOException {
         Scanner scanner = new Scanner(System.in);
+        Path pathToFileName = Paths.get(filename);
 
         System.out.println(ConsoleColors.GREEN_BACKGROUND + ConsoleColors.BLACK_BOLD + "Please add task description");
-        String taskDescription = scanner.next();
+        String taskDescription = scanner.nextLine();
 
         System.out.println(ConsoleColors.GREEN_BACKGROUND + ConsoleColors.BLACK_BOLD + "Please add task due date");
-        String taskDueDate = scanner.next();
+        String taskDueDate = scanner.nextLine();
 
         System.out.println(ConsoleColors.GREEN_BACKGROUND + ConsoleColors.BLACK_BOLD + "Is your task important? true/false");
         String taskImportance = scanner.next();
 
+        String newTask = taskDescription + ", " + taskDueDate + ", " + taskImportance;
+
+        boolean fileExistsAndNotEmpty = Files.exists(pathToFileName) && Files.size(pathToFileName) > 0;
+        String toWrite = (fileExistsAndNotEmpty ? System.lineSeparator() : "") + newTask;
+        Files.writeString(pathToFileName, toWrite, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+
         selectOption();
     }
 
-    public static void removeOption() {
-//        add logika: usuwanie taska o numerze X
-//            add logika: usuniecie taska z pliku tasks.csv
+
+    public static void removeOption(String filename) throws IOException {
         Scanner scanner = new Scanner(System.in);
+        Path pathToFile = Paths.get(filename);
+
+        String[] tasks = Files.exists(pathToFile)
+                ? Files.readAllLines(pathToFile).toArray(new String[0])
+                : new String[0];
+
+        if (tasks.length == 0) {
+            System.out.println(ConsoleColors.RED_UNDERLINED + "No tasks to remove.");
+            selectOption();
+            return;
+        }
 
         System.out.println(ConsoleColors.YELLOW_BACKGROUND_BRIGHT + ConsoleColors.BLACK_BOLD_BRIGHT + "Please select number to remove");
-        String removeNumber = scanner.next();
+        String removeNumberUserInput = scanner.nextLine();
 
-        System.out.println(ConsoleColors.RED_UNDERLINED + "Value was successfully deleted");
+        int removeNumber;
+
+        try {
+            removeNumber = Integer.parseInt(String.valueOf(removeNumberUserInput));
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid value! Please enter a valid integer number.");
+            selectOption();
+            return;
+        }
+
+        if (removeNumber < 0 || removeNumber >= tasks.length) {
+            System.out.println("Invalid number!");
+            selectOption();
+            return;
+        }
+
+        tasks = ArrayUtils.remove(tasks, removeNumber);
+
+        Files.write(pathToFile, Arrays.stream(tasks)
+                .filter(s -> !s.trim().isEmpty())
+                .toList());
+
+        Files.write(pathToFile, Arrays.asList(tasks));
+        System.out.println(ConsoleColors.RESET + ConsoleColors.RED_UNDERLINED + "Value was successfully deleted");
 
         selectOption();
     }
 
-    public static void listOption() {
-//          add logika: printowanie w konsoli taskow ktore zostaly dodane
-//            add logika: zapis do pliku tasks.csv
+    public static void listOption(String filename) throws IOException {
+        int count = 0;
+
+        try (FileReader fileReader = new FileReader(filename);
+             Scanner fileScanner = new Scanner(fileReader)) {
+
+            while (fileScanner.hasNextLine()) {
+                String line = fileScanner.nextLine();
+                System.out.println(ConsoleColors.WHITE_BOLD_BRIGHT + count + " " + line);
+                count++;
+            }
+        }
+        System.out.println();
         selectOption();
     }
 
     public static void exitOption() {
         Scanner scanner = new Scanner(System.in);
-//        String userInput = scanner.nextLine();
-
-
-            System.out.println(ConsoleColors.YELLOW_UNDERLINED + "Bye, bye.");
-
+        System.out.println();
+        System.out.println(ConsoleColors.YELLOW_UNDERLINED + "Bye, bye.");
     }
 }
